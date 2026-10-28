@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es"><head><meta charset="utf-8">
+<html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jet d'Eau · Genève</title>
 <style>
@@ -27,26 +27,35 @@ html,body{overscroll-behavior:none;touch-action:manipulation;-webkit-text-size-a
 </style></head><body>
 <canvas id="c"></canvas>
 <div id="hud">
-<div><span>Caudal</span> <b id="h_q">–</b></div><div><span>Potencia</span> <b id="h_p">–</b></div>
-<div><span>Salida</span> <b id="h_v">–</b></div><div><span>Altura</span> <b id="h_h">–</b></div>
-<div><span>Boquilla Ø</span> <b id="h_d">–</b></div><div><span>En el aire</span> <b id="h_m">–</b></div>
+<div><span data-t="flow">Caudal</span> <b id="h_q">–</b></div><div><span data-t="power">Potencia</span> <b id="h_p">–</b></div>
+<div><span data-t="exit">Salida</span> <b id="h_v">–</b></div><div><span data-t="height">Altura</span> <b id="h_h">–</b></div>
+<div><span data-t="noz">Boquilla Ø</span> <b id="h_d">–</b></div><div><span data-t="air">En el aire</span> <b id="h_m">–</b></div>
 </div>
 <div id="zoom"><button id="zin">+</button><button id="zout">−</button><button id="zrst">⌖</button></div>
 <div id="panel">
-<div class="bar"><b>Jet d'Eau · Genève</b><span><button id="par" style="opacity:.5">Trayect.</button><button id="real">Real</button><button id="pause">⏸</button><button id="fold">▾</button></span></div>
+<div class="bar"><b>Jet d'Eau · Genève</b><span><button id="lang" title="Langue / Language / Idioma">FR</button><button id="par" style="opacity:.5" data-t="par">Trayect.</button><button id="real" data-t="real">Real</button><button id="pause">⏸</button><button id="fold">▾</button></span></div>
 <div class="body">
-<label><span>Caudal <b><i id="v_q">500</i> L/s</b></span><input type="range" id="q" min="150" max="1000" step="10" value="500"></label>
-<label><span>Potencia bombas <b><i id="v_pw">1000</i> kW</b></span><input type="range" id="pw" min="300" max="2000" step="10" value="1000"></label>
-<label><span>Viento <b><i id="v_wind">10</i> m/s</b></span><input type="range" id="wind" min="0" max="35" step="0.5" value="10"></label>
-<label><span>Viento desde <b><i id="v_dir">270° O</i></b></span><input type="range" id="dir" min="0" max="359" step="1" value="270"></label>
-<label><span>Turbulencia <b><i id="v_turb">1.0</i> ×</b></span><input type="range" id="turb" min="0" max="2" step="0.1" value="1"></label>
-<label><span>Ráfagas <b><i id="v_gust">0</i> %</b></span><input type="range" id="gust" min="0" max="60" step="5" value="0"></label>
+<label><span><span data-t="flow">Caudal</span> <b><i id="v_q">500</i> L/s</b></span><input type="range" id="q" min="150" max="1000" step="10" value="500"></label>
+<label><span><span data-t="spow">Potencia bombas</span> <b><i id="v_pw">1000</i> kW</b></span><input type="range" id="pw" min="300" max="2000" step="10" value="1000"></label>
+<label><span><span data-t="swind">Viento</span> <b><i id="v_wind">10</i> m/s</b></span><input type="range" id="wind" min="0" max="35" step="0.5" value="10"></label>
+<label><span><span data-t="sdir">Viento desde</span> <b><i id="v_dir">270° O</i></b></span><input type="range" id="dir" min="0" max="359" step="1" value="270"></label>
+<label><span><span data-t="sturb">Turbulencia</span> <b><i id="v_turb">1.0</i> ×</b></span><input type="range" id="turb" min="0" max="2" step="0.1" value="1"></label>
+<label><span><span data-t="sgust">Ráfagas</span> <b><i id="v_gust">0</i> %</b></span><input type="range" id="gust" min="0" max="60" step="5" value="0"></label>
 </div></div>
 <script>
 (()=>{
 const $=id=>document.getElementById(id);
 const cv=$('c'),ctx=cv.getContext('2d'),bg=document.createElement('canvas'),panel=$('panel');
 const G=9.81,ETA=.76,RHO=1000,K0=.0007,D0=.108,N=40000,CP=.995,SPH=.0998;
+const L={
+ fr:{flow:'Débit',power:'Puissance',exit:'Sortie',height:'Hauteur',noz:'Buse Ø',air:"Dans l'air",spow:'Puissance pompes',swind:'Vent',sdir:'Vent venant de',sturb:'Turbulence',sgust:'Rafales',par:'Trajet.',real:'Réel',
+  card:['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO']},
+ en:{flow:'Flow',power:'Power',exit:'Exit',height:'Height',noz:'Nozzle Ø',air:'In the air',spow:'Pump power',swind:'Wind',sdir:'Wind from',sturb:'Turbulence',sgust:'Gusts',par:'Paths',real:'Real',
+  card:['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW']},
+ es:{flow:'Caudal',power:'Potencia',exit:'Salida',height:'Altura',noz:'Boquilla Ø',air:'En el aire',spow:'Potencia bombas',swind:'Viento',sdir:'Viento desde',sturb:'Turbulencia',sgust:'Ráfagas',par:'Trayect.',real:'Real',
+  card:['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO']}};
+let lang='fr';try{lang=localStorage.getItem('jd_lang')||'fr';}catch(e){}
+if(!L[lang])lang='fr';
 const T={q:500,pw:1000,wind:10,dir:270,turb:1,gust:0};
 const WG=2.5;let showPar=false;   // WG: la niebla y las gotas sienten más el viento lateral   // objetivos (sliders)
 const S={q:500,pw:1000};                                 // valores reales (la bomba tarda en responder)
@@ -203,7 +212,7 @@ function draw(){
    ctx.fillStyle='#fff';ctx.fillText(wind.v.toFixed(1)+' m/s',bx,by+40);}
 }
 function fmt(id,v){
-  const card=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'];
+  const card=L[lang].card;
   $('v_'+id).textContent=id==='dir'?v+'° '+card[Math.round(v/22.5)%16]:(id==='turb'?(+v).toFixed(1):v);
 }
 document.querySelectorAll('input[type=range]').forEach(el=>{
@@ -213,6 +222,10 @@ document.querySelectorAll('input[type=range]').forEach(el=>{
 $('real').onclick=()=>{const o={q:500,pw:1000,wind:10,dir:270,turb:1,gust:0};
   for(const k in o){$(k).value=o[k];$(k).oninput();}};
 $('par').onclick=()=>{showPar=!showPar;$('par').style.opacity=showPar?1:.5;};
+function applyLang(){const d=L[lang];document.documentElement.lang=lang;
+  document.querySelectorAll('[data-t]').forEach(el=>{el.textContent=d[el.dataset.t];});
+  $('lang').textContent=lang.toUpperCase();fmt('dir',$('dir').value);}
+$('lang').onclick=()=>{lang=lang==='fr'?'en':lang==='en'?'es':'fr';try{localStorage.setItem('jd_lang',lang);}catch(e){}applyLang();};
 $('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'▶':'⏸';};
 $('fold').onclick=()=>{panel.classList.toggle('folded');$('fold').textContent=panel.classList.contains('folded')?'▴':'▾';buildBG();};
 setInterval(()=>{
@@ -249,6 +262,7 @@ cv.addEventListener('wheel',e=>{e.preventDefault();zoomBy(Math.exp(-e.deltaY*.00
 $('zin').onclick=()=>zoomBy(1.25,[W/2,H/2]);$('zout').onclick=()=>zoomBy(.8,[W/2,H/2]);
 $('zrst').onclick=()=>{zm=1;ux=0;uy=0;};
 addEventListener('resize',resize);
+applyLang();
 if(innerWidth<600){panel.classList.add('folded');$('fold').textContent='▴';}
 resize();requestAnimationFrame(frame);
 })();

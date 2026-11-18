@@ -1,6 +1,6 @@
 // Offline helper. Online: always loads the newest version. Offline: opens the saved copy.
 // Bump the version number if installed copies ever need to drop old files.
-const CACHE = 'vr-jet-d-eau-v1';
+const CACHE = 'vr-jet-d-eau-v2';
 const PREFIX = 'vr-jet-d-eau-';   // only this app's caches: other apps share the same domain
 const FILES = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 self.addEventListener('install', e => {

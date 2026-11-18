@@ -68,7 +68,7 @@ const S={q:500,pw:1000};                                 // valores reales (la b
 const X=new Float32Array(N),Y=new Float32Array(N),Z=new Float32Array(N),
  VX=new Float32Array(N),VY=new Float32Array(N),VZ=new Float32Array(N),
  K=new Float32Array(N),AGE=new Float32Array(N),M=new Float32Array(N),A=new Uint8Array(N);
-let ux=0,uy=0,yaw=0,pit=.1,zm=1,panX=0,panY=0,mf=1,W,H,dpr,baseY,cx,s=0,head=0,acc=0,tm=0,qa=1,alive=0,rate=700,paused=false;
+let exX=0,exY=0,horY=300,fk='',fa=0,fd='',tgt=0,ux=0,uy=0,yaw=0,pit=.1,zm=1,panX=0,panY=0,mf=1,W,H,dpr,baseY,cx,s=0,head=0,acc=0,tm=0,qa=1,alive=0,rate=700,paused=false;
 let wind={E:0,N:0,v:0};
 const spl=[];
 const g=()=>(Math.random()+Math.random()+Math.random()-1.5)*2;  // ~N(0,1) barata
@@ -105,7 +105,7 @@ function step(dt,dv){
   const gf=1+T.gust/100*(.6*Math.sin(tm*.7)+.4*Math.sin(tm*1.9+1));
   const wv=T.wind*gf,wE=-Math.sin(ang),wN=-Math.cos(ang),sq=Math.sqrt(dt);
   wind={E:wE,N:wN,v:wv};
-  alive=0;
+  alive=0;let mx=0,my=0;
   for(let i=0;i<N;i++){
     if(!A[i])continue;
     const ws=wv*Math.pow(Math.max(Y[i],1)/10,.22);      // viento aumenta con la altura
@@ -116,42 +116,62 @@ function step(dt,dv){
     VX[i]+=-kk*WG*rx*dt+sg*g();VZ[i]+=-kk*WG*rz*dt+sg*g();VY[i]+=(-G-kk*ry)*dt+sg*.5*g();
     X[i]+=VX[i]*dt;Y[i]+=VY[i]*dt;Z[i]+=VZ[i]*dt;AGE[i]+=dt;
     if(Y[i]<0){A[i]=0;if(spl.length<400&&Math.random()<.04)spl.push([X[i],Z[i],1]);continue;}
+    if(M[i]>.5){const ax=Math.abs(X[i]);if(ax>mx)mx=ax;if(Y[i]>my)my=Y[i];}
     alive++;
   }
+  if(my>0){exX=exX?exX+(mx-exX)*.03:mx;exY=exY?exY+(my-exY)*.03:my;}   // extensión real del chorro, promediada lentamente
   for(let i=spl.length-1;i>=0;i--){spl[i][2]-=dt*1.2;if(spl[i][2]<=0){spl[i]=spl[spl.length-1];spl.pop();}}
 }
 function buildBG(){
   baseY=H-(panel.offsetHeight||0)-Math.min(30,H*.04)-8;cx=W/2;
-  const hor=baseY-Math.max(34,H*.05);
-  bg.width=W*1.8*dpr;bg.height=H*dpr;const b=bg.getContext('2d');b.setTransform(dpr,0,0,dpr,0,0);
+  const hor=baseY-Math.max(34,H*.05);horY=hor;
+  bg.width=W*2.4*dpr;bg.height=H*dpr;const b=bg.getContext('2d');b.setTransform(dpr,0,0,dpr,0,0);
   let gr=b.createLinearGradient(0,0,0,hor);
   gr.addColorStop(0,'#0c2140');gr.addColorStop(.55,'#35618f');gr.addColorStop(1,'#f2b88c');
-  b.fillStyle=gr;b.fillRect(0,0,W*1.8,hor+1);
+  b.fillStyle=gr;b.fillRect(0,0,W*2.4,hor+1);
   const ridge=(col,amp,base,sd)=>{b.fillStyle=col;b.beginPath();b.moveTo(0,hor+1);
-    for(let x=0;x<=W*1.8+8;x+=8){const y=hor-(base+amp*(.5*Math.sin(x*.003+sd)+.3*Math.sin(x*.009+sd*2)+.2*Math.sin(x*.021+sd*3)+.5));b.lineTo(x,y);}
-    b.lineTo(W*1.8,hor+1);b.fill();};
+    for(let x=0;x<=W*2.4+8;x+=8){const y=hor-(base+amp*(.5*Math.sin(x*.003+sd)+.3*Math.sin(x*.009+sd*2)+.2*Math.sin(x*.021+sd*3)+.5));b.lineTo(x,y);}
+    b.lineTo(W*2.4,hor+1);b.fill();};
   ridge('#6b86a8',H*.06,H*.03,1.3);ridge('#2c4764',H*.045,H*.008,4.1);
   gr=b.createLinearGradient(0,hor,0,H);
   gr.addColorStop(0,'#d79c80');gr.addColorStop(.12,'#3b6a92');gr.addColorStop(1,'#0a2036');
-  b.fillStyle=gr;b.fillRect(0,hor,W*1.8,H-hor);
+  b.fillStyle=gr;b.fillRect(0,hor,W*2.4,H-hor);
   b.fillStyle='rgba(255,220,160,.8)';
-  for(let i=0;i<70;i++)b.fillRect(Math.random()*W*1.8,hor-1-Math.random()*3,1.5,1.5);
+  for(let i=0;i<70;i++)b.fillRect(Math.random()*W*2.4,hor-1-Math.random()*3,1.5,1.5);
 }
 function resize(){
-  W=innerWidth;H=innerHeight;mf=W<600?.75:1;dpr=Math.min(W<600?1.75:2,devicePixelRatio||1);
+  W=innerWidth;H=innerHeight;mf=W<600?.75:1;dpr=Math.min(W<600?1.5:2,devicePixelRatio||1);
   cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0);buildBG();
 }
 function draw(){
   ctx.globalCompositeOperation='source-over';
   ctx.fillStyle='#0a2036';ctx.fillRect(0,0,W,H);
   ctx.save();ctx.translate(cx+panX,baseY+panY);ctx.scale(zm,zm);ctx.translate(-cx,-baseY);
-  ctx.drawImage(bg,-.4*W+.4*W*Math.sin(yaw),0,W*1.8,H);
+  {const hf=Math.min(.95,Math.max(.05,horY/H)),gb=ctx.createLinearGradient(0,0,0,H);   // relleno continuo de cielo y agua por si algo se sale del paisaje
+   gb.addColorStop(0,'#0c2140');gb.addColorStop(hf*.55,'#35618f');gb.addColorStop(hf,'#f2b88c');gb.addColorStop(Math.min(1,hf+.001),'#d79c80');
+   gb.addColorStop(hf+(1-hf)*.12,'#3b6a92');gb.addColorStop(1,'#0a2036');
+   ctx.fillStyle=gb;if(uy>baseY*(zm-1)+1)ctx.fillRect(-W,-6*H,3*W,6*H+2);}
+  ctx.drawImage(bg,-.7*W,0,W*2.4,H);
   const dv=derive(S.q,S.pw);
   // encuadre automático: ajusta la escala y centra el chorro (incluida la deriva del viento)
-  let x0=0,x1=0,hm=0;
-  for(const m of [1,1.9])traj(dv,m,(x,y)=>{if(x<x0)x0=x;if(x>x1)x1=x;if(y>hm)hm=y;});
-  const target=Math.min((W*.94)/Math.max(60,2*Math.max(-x0,x1)+30),(baseY-66)/Math.max(100,hm*1.04));
-  s=s?s+(target-s)*.04:target;
+  // el encuadre se calcula UNA vez con los valores objetivo (sin ráfagas ni inercia) y se mantiene hasta que muevas un slider
+  const key=[T.q,T.pw,T.wind,T.dir,W,H].join();
+  if(key!==fk){fk=key;fa=performance.now()+250;}
+  if(fk!==fd&&performance.now()>=fa){
+    fd=fk;const a=T.dir*Math.PI/180,old=wind;wind={E:-Math.sin(a),N:-Math.cos(a),v:T.wind};
+    const dt2=derive(T.q,T.pw);let x0=0,x1=0,hm=0;
+    for(const m of [1,1.9])traj(dt2,m,(x,y)=>{if(x<x0)x0=x;if(x>x1)x1=x;if(y>hm)hm=y;});
+    wind=old;
+    tgt=Math.min((W*.94)/Math.max(60,2*Math.max(-x0,x1)+30),(baseY-66)/Math.max(100,hm*1.04));
+  }
+  // la cámara sigue lentamente la extensión real del agua (suavizada), manteniendo la boquilla en el centro
+  const live=exY>25?Math.min((W*.94)/Math.max(60,2*exX+30),(baseY-66)/Math.max(100,exY*1.04)):0;
+  const target=live||tgt||s||1;
+  s=s?s+(target-s)*(live?.008:.05):target;
+  // límites: la vista nunca sale del paisaje dibujado (fondo: x de -0.7W a 1.7W; arriba continúa el cielo)
+  zm=Math.min(5,Math.max(1,zm));
+  ux=Math.min(zm*(cx+.7*W)-cx,Math.max(W-cx-zm*(1.7*W-cx),ux));
+  uy=Math.min(baseY*(zm-1)+.45*H*zm,Math.max((H-baseY)*(1-zm),uy));
   panX=ux;panY=uy;   // arranca con la boquilla en el centro; se puede mover en 2D
   const cyw=Math.cos(yaw),syw=Math.sin(yaw),cp=Math.cos(pit),sp=Math.sin(pit);
   const pj=(x,y,z)=>[cx+(x*cyw+z*syw)*s,baseY-(y*cp+(-x*syw+z*cyw)*sp)*s];
@@ -244,7 +264,7 @@ setInterval(()=>{
 let last=performance.now();
 function frame(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
-  if(dt>.026)qa=Math.max(.35,qa*.97);else if(dt<.019)qa=Math.min(1,qa+.002);   // adapta partículas al rendimiento
+  if(dt>.024)qa=Math.max(.2,qa*.95);else if(dt<.019)qa=Math.min(1,qa+.003);   // adapta partículas al rendimiento
   if(!paused&&dt>0){
     const a=1-Math.exp(-dt/1.5);S.q+=(T.q-S.q)*a;S.pw+=(T.pw-S.pw)*a;   // la bomba responde con inercia
     tm+=dt;const dv=derive(S.q,S.pw);
@@ -254,20 +274,23 @@ function frame(now){
   }
   draw();requestAnimationFrame(frame);
 }
-function zoomBy(f,p){const z=Math.min(5,Math.max(.5,zm*f)),fe=z/zm,ox=cx+ux,oy=baseY+uy;
+function zoomBy(f,p){const z=Math.min(5,Math.max(1,zm*f)),fe=z/zm,ox=cx+ux,oy=baseY+uy;
   ux=p[0]-(p[0]-ox)*fe-cx;uy=p[1]-(p[1]-oy)*fe-baseY;zm=z;}
 const ptr=new Map();let pd=0;
 const pdist=()=>{const a=[...ptr.values()];return a.length<2?0:Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);};
-cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);ptr.set(e.pointerId,[e.clientX,e.clientY]);pd=pdist();};
-cv.onpointermove=e=>{const o=ptr.get(e.pointerId);if(!o)return;const n=[e.clientX,e.clientY],dx=n[0]-o[0],dy=n[1]-o[1];
+cv.onpointerdown=e=>{if(e.pointerType==='mouse')ptr.clear();cv.setPointerCapture(e.pointerId);ptr.set(e.pointerId,[e.clientX,e.clientY]);pd=pdist();};
+cv.onpointermove=e=>{const o=ptr.get(e.pointerId);if(!o)return;if(e.pointerType==='mouse'&&!e.buttons){clr();return;}const n=[e.clientX,e.clientY],dx=n[0]-o[0],dy=n[1]-o[1];
   if(ptr.size===1){ux+=dx;uy+=dy;}   // un dedo: mover en 2D (sin girar)
   ptr.set(e.pointerId,n);
-  if(ptr.size===2){const d=pdist(),a=[...ptr.values()];if(pd)zoomBy(d/pd,[(a[0][0]+a[1][0])/2,(a[0][1]+a[1][1])/2]);ux+=dx/2;uy+=dy/2;pd=d;}};
-cv.onpointerup=cv.onpointercancel=e=>{ptr.delete(e.pointerId);pd=0;};
+  if(ptr.size===2){const d=pdist(),a=[...ptr.values()];if(pd)zoomBy(Math.min(1.25,Math.max(.8,d/pd)),[(a[0][0]+a[1][0])/2,(a[0][1]+a[1][1])/2]);ux+=dx/2;uy+=dy/2;pd=d;}};
+cv.onpointerup=cv.onpointercancel=cv.onlostpointercapture=e=>{ptr.delete(e.pointerId);pd=0;};
+const clr=()=>{ptr.clear();pd=0;};
+cv.addEventListener('touchend',e=>{if(e.touches.length<ptr.size)clr();});cv.addEventListener('touchcancel',clr);
+addEventListener('blur',clr);document.addEventListener('visibilitychange',clr);
 cv.addEventListener('wheel',e=>{e.preventDefault();zoomBy(Math.exp(-e.deltaY*.0015),[e.clientX,e.clientY]);},{passive:false});
 $('zin').onclick=()=>zoomBy(1.25,[W/2,H/2]);$('zout').onclick=()=>zoomBy(.8,[W/2,H/2]);
 $('zrst').onclick=()=>{zm=1;ux=0;uy=0;};
-addEventListener('resize',resize);
+let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(Math.abs(innerWidth-W)>1||Math.abs(innerHeight-H)>1)resize();},150);});
 applyLang();
 if(innerWidth<600){panel.classList.add('folded');$('fold').textContent='▴';}
 resize();requestAnimationFrame(frame);

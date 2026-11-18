@@ -24,7 +24,13 @@ input[type=range]{width:100%;margin:2px 0 0;accent-color:var(--acc);height:28px}
 html,body{overscroll-behavior:none;touch-action:manipulation;-webkit-text-size-adjust:100%}
 @media (max-width:600px){#hud{font-size:11px;padding:5px 8px;gap:0 10px;border-radius:10px}
 #panel{padding:5px 8px;left:6px;right:6px}.body{gap:0 10px}label span{font-size:11px}input[type=range]{height:22px}.bar button{padding:3px 9px}.bar>b{display:none}.bar{justify-content:flex-end}}
-</style></head><body>
+</style>  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Jet d'Eau">
+  <meta name="theme-color" content="#0c2140">
+</head><body>
 <canvas id="c"></canvas>
 <div id="hud">
 <div><span data-t="flow">Caudal</span> <b id="h_q">–</b></div><div><span data-t="power">Potencia</span> <b id="h_p">–</b></div>
@@ -266,4 +272,5 @@ applyLang();
 if(innerWidth<600){panel.classList.add('folded');$('fold').textContent='▴';}
 resize();requestAnimationFrame(frame);
 })();
-</script></body></html>
+</script><script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js');</script>
+</body></html>
